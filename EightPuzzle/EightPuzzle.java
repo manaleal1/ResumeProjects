@@ -1,11 +1,14 @@
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
-
-class EightPuzzle{
+/*
+ * Implementation of Breadth First Search, Depth First Search, Uniform Cost Search, 
+ * (Greedy) Best First Search, and both A Star Search algorithms
+ * based on descriptions given in chapter 3 of Textbook "Artificial Intelligence A Modern Approach, Third Edition"
+ * by Stuart Russell and Peter Norvig
+ */
+public class EightPuzzle{
 		
 		/*
 			Goal:   1 2 3 8 0 4 7 6 5
@@ -14,72 +17,6 @@ class EightPuzzle{
 			Hard:   5 6 7 4 0 8 3 2 1
 
 		*/
-
-	static class Node{
-		String state;	//State of the puzzle
-		Node parent;	//Parent of the node
-		String action;	//Direction blank tile moved to get to current state
-		int path_cost;	//Tile that moved (Tiles 1 through 8)
-		int depth;		//Number of movements along solution path
-		int heuristic;	//How the node will be evaluated
-		public Node (String state, Node parent, String action, int path_cost, int depth ){
-			this.state = state;
-			this.parent = parent;
-			this.action = action;
-			this.path_cost = path_cost;
-			this.depth = depth;
-		}
-		//This contructor is for GBF, A*1, A*2
-		public Node (String state, Node parent, String action, int path_cost, int depth, int heuristic ){
-			this.state = state;
-			this.parent = parent;
-			this.action = action;
-			this.path_cost = path_cost;
-			this.depth = depth;
-			this.heuristic = heuristic;
-		}
-		
-		/**
-		 * 
-		 * @return A String where every letter represents the possible moves the blank tile 
-		 * 		   can make based on a given state.
-		 * First it checks where the blank tile, which i've labeled as "0", is in the puzzle 
-		 * Depending on where the blank tile is, the function will return a String of letters that
-		 * let the program know which tiles in the puzzle can move.
-		 * L = left
-		 * R = Right
-		 * U = Up
-		 * D = Down
-		 */
-		private String actions() {
-			int position; 
-			position = state.indexOf("0"); 
-			if( position % 3 == 0 ) { 		//first column
-				if( position == 0 )		 //first row
-					return "DR";
-				else if( position == 3 ) //second row
-					return "UDR";
-				else					//third row
-					return "UR";		
-			}
-			else if( position % 3 == 1 ) { 	//second column
-				if( position == 1 )		//First row
-					return "DRL";
-				else if( position == 4 )//Second row
-					return "UDRL";
-				else					//Third row
-					return "URL";
-			}
-			else							//Third column
-				if( position == 2 )		//First row
-					return "DL";
-				else if( position == 5 )//Second row
-					return "UDL";
-				else					//Third row
-					return "UL";
-			
-		}
-	}
 	
 	static final String goalState = "123804765"; // a String of numbers representing the completed state of the eight puzzle
 	
@@ -127,7 +64,7 @@ class EightPuzzle{
 	 * @return true or false
 	 * Checks every node in the frontier to see if Node n is in the frontier. 
 	 */
-	static boolean checkFrontier(Node n, LinkedList<Node> frontier){
+	public static boolean checkFrontier(Node n, LinkedList<Node> frontier){
 		for(Node item : frontier) {
 			if(item.state.equals(n.state) )
 				return true; 
@@ -135,140 +72,8 @@ class EightPuzzle{
 		return false;
 	}
 	
-	/**
-	 * 
-	 * @param n A Node with the initial state of the puzzle.
-	 * @return a Node containing the goal state, all nodes along the solution path, 
-	 * 			the direction the blank tile was moved to get the solution, the path-cost, and the depth
-	 * This function expands all nodes at every depth and checks if a node is in the goal state.
-	 */
-	// Breadth-first → add nodes to the end of the queue
-	public static Node breadthFirstSearch(Node n) {
-		if (isGoal(n))
-			return n;
-		int time = 0;  //number of nodes popped off the queue
-		int space = 1; //size of the queue at its max		
-		LinkedList<Node> frontier = new LinkedList<Node>(); //FIFO queue
-		ArrayList<String> explored = new ArrayList<String>();
-		frontier.add(n);	//The first node expanded
-		Node child;			// Node representing the puzzle state where a tile has moved to new position
-		while( !frontier.isEmpty() ) {
-			Node node = frontier.pop(); 
-			time++;
-			// if function has seen the node before, 
-			// go through the loop again to expand the next node
-			if(explored.contains(node.state)) 
-				continue;
-			explored.add( node.state ); 
-			
-			// actions() is called to see which tiles can move based on where
-			// the blank tile is and what the current puzzle state is. 
-			String moves = node.actions(); 
-			for(int i = 0; i < moves.length(); i++) { 
-				//A Node has String state, Node parent, String action, int path_cost, int depth
-				if( moves.charAt(i) == 'L' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1), node, "LEFT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost, node.depth+1 );
-				else if( moves.charAt(i) == 'R' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1), node, "RIGHT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost, node.depth+1 );
-				else if( moves.charAt(i) == 'U' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3), node, "UP", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) ) + node.path_cost, node.depth+1 );
-				else//if( moves.charAt(i) == 'D' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3), node, "DOWN", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost, node.depth+1 );
-				
-				//If the function hasn't seen the current state of the puzzle before
-				//Then it will check if the current node is the in the goal state.
-				//If it is, the solution is returned
-				//otherwise it gets added to the frontier
-				if( !explored.contains(child.state) ) {
-					if( isGoal(child) ) {
-						System.out.println("Time = " + time);
-						System.out.println("Space = "+ space);
-						return child;
-						
-					}
-					else { 
-						frontier.add(child);
-						space++;
-					}
-				}
-				
-			}
-		}
-		
-		//When all nodes have been expanded, the function will return a node
-		//containing a String that says failure to indicate that a solution 
-		//was not found
-		return new Node("failure",null,null,0,0);
-	}
-	
 
-	/**
-	 * 
-	 * @param n A Node with the initial state of the puzzle
-	 * @return A Node with the solution path or a Node with failure String
-	 * This function expands a node until finds the goal state. 
-	 * If it encounters a node it has already seen before,
-	 * then it will no longer expand that node and will continue expanding all other nodes
-	 */
-	// Depth-first → add nodes to the front (stack)
-	public static Node depthFirstSearch(Node n) {
-		if( isGoal(n) )
-			return n;
-		int time = 0;  //number of nodes popped off the queue
-		int space = 1; //size of the queue at its max
-		LinkedList<Node> frontier = new LinkedList<Node>(); //FILO Queue
-		ArrayList<String> explored = new ArrayList<String>(); //All states the function has encountered
-		frontier.push(n);	//the initial state Node will be expanded
-		Node child;
-		while( !frontier.isEmpty() ) {
-			Node node = frontier.pop();
-			time++;
-			//If the current node has been seen before
-			//The function will repeat the loop with a new node from the frontier
-			if(explored.contains(node.state))
-				continue;
-			explored.add( node.state ); 
-			
-			// actions() is called to see which tiles can move based on where
-			// the blank tile is and what the current puzzle state is.
-			String moves = node.actions();
-			for(int i = 0; i < moves.length(); i++) { 
-				//A Node has String state, Node parent, String action, int path_cost
-				if( moves.charAt(i) == 'L' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1), node, "LEFT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost, node.depth+1 );
-				else if( moves.charAt(i) == 'R' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1), node, "RIGHT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost, node.depth+1);
-				else if( moves.charAt(i) == 'U' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3), node, "UP", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) ) + node.path_cost, node.depth+1 );
-				else//if( moves.charAt(i) == 'D' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3), node, "DOWN", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost, node.depth+1);
-			
-				
-				//If the new node has a state that hasn't been seen by the function
-				//It will check if the node is in the goal state.
-				//If it is, the node will be returned
-				//otherwise the function adds it to the frontier.
-				if( !explored.contains(child.state) || !checkFrontier(child,frontier) ) {
-					if( isGoal(child) ) {
-						System.out.println("Time = " + time);
-						System.out.println("Space = " + space);
-						return child;	
-					}
-					else {
-						frontier.push(child);
-						space++;
-					}
-				}	
-			}
-			
-		}
 		
-		//When the function no longer has nodes to expand
-		//it will return a failure node
-		//Meaning a solution was not found.
-		return new Node("failure", null, null, 0, 0);
-	}
-	
 	
 	/**
 	 * THIS IS FOR UNIFORM COST SEARCH
@@ -301,7 +106,9 @@ class EightPuzzle{
 	 */
 	static void findElementAndHeuristic (LinkedList<Node> l, Node n) {
 		int counter = 0;
-		l.sort((Node a,Node b) -> {return a.heuristic - b.heuristic;});
+		l.sort((Node a,Node b) -> {
+			return a.heuristic - b.heuristic;
+		});
 		for(Node currentNode : l) {
 			if(currentNode.state.equals(n.state))
 				if(currentNode.heuristic > n.heuristic) {
@@ -314,72 +121,6 @@ class EightPuzzle{
 	}
 	
 	
-	/**
-	 * 
-	 * @param n A node with the initial state
-	 * @return	A Solution node or a failure node
-	 * This function looks for goal state using a queue of nodes that are ordered from 
-	 * lowest path-cost to greates path cost. 
-	 */
-	//Uniform cost → sort the nodes on the queue based on the cost of reaching the node from start node
-	public static Node UniformCostSearch(Node n) {
-		int time = 0;  //number of nodes popped off the queue
-		int space = 1; //size of the queue at its max
-		LinkedList<Node> frontier = new LinkedList<Node>(); //Nodes to be expanded
-		ArrayList<String> explored = new ArrayList<String>(); //Nodes that have been seen before
-		frontier.sort(new Comparator<Node>() {
-			@Override
-			public int compare(Node a, Node b) {
-				return a.path_cost - b.path_cost;	//frontier is sorted from lowest path cost to highest path cost
-			}
-		});
-		frontier.add(n); //initial node to be expanded
-		Node child;
-		while( !frontier.isEmpty() ) {
-			Node node = frontier.pop(); /* chooses the lowest-cost node in frontier */
-			time++;
-			//If the current node is in the goal state
-			//Then it will be returned
-			if ( isGoal(node) ) {
-				System.out.println("Time = " + time);
-				System.out.println("Space = " + space);
-				return node;
-			}
-			explored.add(node.state);
-			// actions() is called to see which tiles can move based on where
-			// the blank tile is and what the current puzzle state is.
-			String moves = node.actions();
-			for(int i = 0; i < moves.length(); i++) { 
-				//A Node as String state, Node parent, String action, int path_cost, int depth
-				if( moves.charAt(i) == 'L' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1), node, "LEFT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost, node.depth+1 );
-				else if( moves.charAt(i) == 'R' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1), node, "RIGHT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost, node.depth+1 );
-				else if( moves.charAt(i) == 'U' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3), node, "UP", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) ) + node.path_cost, node.depth+1 );
-				else//if( moves.charAt(i) == 'D' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3), node, "DOWN", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost, node.depth+1 );
-			
-				//If this node hasn't been seen before 
-				//add it to the frontier
-				if( !explored.contains(child.state) ) {
-					frontier.add(child);
-					space++;
-				}
-				//Calls this function to check if frontier already has this node.
-				//and if it does, and the child has a lower path cost, then the child will replace
-				//the node in the frontier
-				findElementAndPathCost(frontier, child);
-					
-			}
-			
-		}
-		
-		//If no solution was found 
-		//return the failure node
-		return new Node("failure", null, null, 0, 0);
-	} 
-
 	/**
 	 * 
 	 * @param s A string representing the state of the eight puzzle
@@ -401,142 +142,8 @@ class EightPuzzle{
 			
 		return counter;
 	}
-	/**
-	 * 
-	 * @param n Node with the initial state
-	 * @return Node containing either solution or "failure"
-	 * This function evaluates a node to see if it should be expanded.
-	 * It does this until it finds the solution
-	 * 
-	 */
-	//Best-first, h = number of tiles that are not it correct position
-	public static Node BestFirstSearch(Node n) { //see page 99
-		int time = 0;  //number of nodes popped off the queue
-		int space = 1; //size of the queue at its max
-		LinkedList<Node> frontier = new LinkedList<Node>();  //Nodes to be expanded
-		ArrayList<String> explored = new ArrayList<String>(); //Nodes that have been seen
-		//Sort the frontier so that nodes that have little misplaced tiles
-		//appear at the beginning of the list
-		frontier.sort(new Comparator<Node>() {
-			@Override
-			public int compare(Node a, Node b) {
-				return a.heuristic - b.heuristic;	
-			}
-		});
-		frontier.add(n); //First node to be expanded 
-		Node child;
-		while( !frontier.isEmpty() ) {
-			Node node = frontier.pop(); /* chooses the lowest-cost node in frontier */
-			time++;
-			//If this node is in the goal state
-			// return it
-			if ( isGoal(node) ) {
-				System.out.println("Time = " + time);
-				System.out.println("Space = " + space);
-				return node;
-			}
-			explored.add(node.state);	
-			// actions() is called to see which tiles can move based on where
-			// the blank tile is and what the current puzzle state is.
-			String moves = node.actions();
-			for(int i = 0; i < moves.length(); i++) { 
-				//A Node has String state, Node parent, String action, int path-cost, int depth, int h 
-				if( moves.charAt(i) == 'L' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1), node, "LEFT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1)) );
-				else if( moves.charAt(i) == 'R' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1), node, "RIGHT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1)) );
-				else if( moves.charAt(i) == 'U' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3), node, "UP", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3)) );
-				else//if( moves.charAt(i) == 'D' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3), node, "DOWN", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3)) );
-			
-				//If the child node hasn't been seen before
-				//add it to the frontier
-				if( !explored.contains(child.state) ) { 
-					frontier.add(child);
-					space++;
-				}
-				//Calls this function to check if frontier already has this node.
-				//and if it does, and the child has a lower heuristic value, then the child will replace
-				//the node in the frontier
-				findElementAndHeuristic(frontier, child);
-					
-			}
-			
-		}
-		//Search can't find the solution
-		//return failure node
-		return new Node("failure", null, null, 0, 0);
-	}
+
 	
-	/**
-	 * 
-	 * @param n A Node with the initial state. 
-	 * @return A node containing the Goal state, the parent node state, the action taken to get to the current state,
-	 * and number of misplaced tiles.  
-	 * This Function takes a Node with an String representing the initial state of the eight puzzle.
-	 * It uses the number of incorrect tiles + the path cost to find the Goal State.
-	 */
-	// A*1, h = number of tiles that are not it correct position
-	// page 93 says it's identical to uniform cost search
-	// except A* uses g + h instead of g
-	// g = path-cost
-	// h = number of tiles in wrong position
-	public static Node AStar1(Node n){
-		int time = 0;  //number of nodes popped off the queue
-		int space = 1; //size of the queue at its max
-		LinkedList<Node> frontier = new LinkedList<Node>(); 
-		ArrayList<String> explored = new ArrayList<String>();
-		frontier.sort(new Comparator<Node>() {
-			@Override
-			public int compare(Node a, Node b) {
-				return a.heuristic - b.heuristic;
-			}
-		});
-		frontier.add(n);
-		Node child;
-		while( !frontier.isEmpty() ) {
-			Node node = frontier.pop(); /* chooses the node with the lowest heuristic value in frontier */
-			time++;
-			//If this node has the goal state
-			//return it
-			if ( isGoal(node) ) {
-				System.out.println("Time = " + time);
-				System.out.println("Space = " + space);
-				return node;
-			}
-			explored.add(node.state);
-			// actions() is called to see which tiles can move based on where
-			// the blank tile is and what the current puzzle state is.
-			String moves = node.actions();
-			for(int i = 0; i < moves.length(); i++) { //String state, Node parent, String action, int path-cost, int depth, int number of misplaced tiles + previous path-costs + current path cost
-				if( moves.charAt(i) == 'L' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1), node, "LEFT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) )+ node.path_cost );
-				else if( moves.charAt(i) == 'R' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1), node, "RIGHT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1))+ Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost );
-				else if( moves.charAt(i) == 'U' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3), node, "UP", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) )+ node.path_cost );
-				else//if( moves.charAt(i) == 'D' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3), node, "DOWN", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost, node.depth+1, numberOfWrongTiles(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost );
-			
-				//If Child is new
-				// add it to the frontier.
-				if( !explored.contains(child.state) ) { 
-					frontier.add(child);
-					space++;
-				}
-				//Calls this function to check if frontier already has this node.
-				//and if it does, and the child has a lower heuristic value, then the child will replace
-				//the node in the frontier
-				findElementAndHeuristic(frontier, child);
-					
-			}
-			
-		}
-		//Solution not found?
-		//return failure node
-		return new Node("failure", null, null, 0, 0);
-	}
 	/**
 	 * 
 	 * @param s String representing the eight puzzle.
@@ -653,66 +260,6 @@ class EightPuzzle{
 		return totalsum; //return sum of Manhattan distances
 	}
 	
-	/**
-	 * 
-	 * @param n Node with initial state of the puzzle
-	 * @return Node with solution path
-	 * This Search is the same as A*1 except the in case of f(n) = h(n) + g(n)
-	 * h = sum of Manhattan Distances between all tiles and their correct positions
-	 * g = path cost
-	 */
-	public static Node AStar2(Node n){
-		int time = 0;  //number of nodes popped off the queue
-		int space = 1; //size of the queue at its max
-		LinkedList<Node> frontier = new LinkedList<Node>(); 
-		ArrayList<String> explored = new ArrayList<String>();
-		frontier.sort(new Comparator<Node>() {
-			@Override
-			public int compare(Node a, Node b) {
-				return a.heuristic - b.heuristic; // ordered from lowest sum to highest sum of Manhattan Distances
-			}
-		});
-		frontier.add(n);
-		Node child;
-		while( !frontier.isEmpty() ) {
-			Node node = frontier.pop(); /* chooses the lowest-cost node in frontier */
-			time++;
-			if ( isGoal(node) ) {
-				System.out.println("Time = " + time);
-				System.out.println("Space = " + space);
-				return node;
-			}
-			explored.add(node.state);
-			String moves = node.actions();
-			for(int i = 0; i < moves.length(); i++) { 
-				//A Node has String state, Node parent, String action, int Manhattan Distance of new state
-				if( moves.charAt(i) == 'L' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1), node, "LEFT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost, node.depth+1, manhattanDistances(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-1)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-1)) ) + node.path_cost );
-				else if( moves.charAt(i) == 'R' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1), node, "RIGHT", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) ) + node.path_cost, node.depth+1, manhattanDistances(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+1)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+1)) )+ node.path_cost );
-				else if( moves.charAt(i) == 'U' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3), node, "UP", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) ) + node.path_cost, node.depth+1, manhattanDistances(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")-3)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")-3)) )+ node.path_cost );
-				else//if( moves.charAt(i) == 'D' )
-					child = new Node( swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3), node, "DOWN", Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) ) + node.path_cost, node.depth+1, manhattanDistances(swap(node.state, node.state.indexOf("0"),node.state.indexOf("0")+3)) + Integer.parseInt( Character.toString(node.state.charAt(node.state.indexOf("0")+3)) )+ node.path_cost );
-			
-				//if child node is new
-				//add it to the frontier
-				if( !explored.contains(child.state) ) {
-					frontier.add(child);
-					space++;
-				}
-				//Calls this function to check if frontier already has this node.
-				//and if it does, and the child has a lower heuristic value, then the child will replace
-				//the node in the frontier
-				findElementAndHeuristic(frontier, child);
-				
-			}
-			
-		}
-		//Solution was not found
-		//return failure node
-		return new Node("failure", null, null, 0, 0);
-	}
 	
 	/**
 	 * 
@@ -803,39 +350,47 @@ class EightPuzzle{
 				System.out.println("5 = A*1 Search");			//hard goes on forever
 				System.out.println("6 = A*2 Search");			//hard goes on forever
 				System.out.println("0 = Exit the Program");
-								
+					
+				SearchAlgorithm sa;
+				
 				selection = input.readLine();
 				switch( selection.trim() ) {
 				case "1":
 					System.out.println("The program will now use Breadth-First Search to find the solution to " + puzzle);
-					printSolution( breadthFirstSearch( new Node(puzzle,null,null,0,0) ), "Total Path-cost = " );
+					sa = new BreadthFirstSearch();
+					printSolution( sa.search( new Node(puzzle,null,null,0,0) ), "Total Path-cost = " );
 					break;
 				case "2":
 					System.out.println("The program will now use Depth-First Search to find the solution to " + puzzle);
-					printSolution( depthFirstSearch(new Node(puzzle,null,null,0,0) ), "Total Path-cost = " );
+					sa = new DepthFirstSearch();
+					printSolution( sa.search(new Node(puzzle,null,null,0,0) ), "Total Path-cost = " );
 					break;
 				case "3":
 					System.out.println("The program will now use Uniform Cost Search to find the solution to " + puzzle);
-					printSolution( UniformCostSearch( new Node(puzzle,null,null,0,0) ), "Total Path-cost = " );
+					sa = new UniformCostSearch();
+					printSolution( sa.search( new Node(puzzle,null,null,0,0) ), "Total Path-cost = " );
 					break;
 				case "4":
 					System.out.println("The program will now use Best-First Search to find the solution to " + puzzle);
 					System.out.println("For this program, Best-First Search will use h = number of misplaced tiles"); 
-					printSolution( BestFirstSearch( new Node(puzzle,null,null,0,0, numberOfWrongTiles(puzzle)) ), "Misplaced tiles = " );
+					sa = new BestFirstSearch();
+					printSolution( sa.search( new Node(puzzle,null,null,0,0, numberOfWrongTiles(puzzle)) ), "Misplaced tiles = " );
 					break;
 				case "5":
 					System.out.println("The program will now use A*1 Search to find the solution to " + puzzle);
 					System.out.println("For this program, A*1 Search will use f(n) = g(n) + h(n)");
 					System.out.println("h = number of misplaced tiles");
 					System.out.println("g = path-cost");
-					printSolution( AStar1( new Node(puzzle,null,null,0,0, numberOfWrongTiles(puzzle)) ), "f(n) = " );
+					sa = new AStar1();
+					printSolution( sa.search( new Node(puzzle,null,null,0,0, numberOfWrongTiles(puzzle)) ), "f(n) = " );
 					break;
 				case "6":
 					System.out.println("The program will now use A*2 Search to find the solution to " + puzzle);
 					System.out.println("For this program, A*2 Search will use f(n) = g(n) + h(n)");
 					System.out.println("h = sum of Manhattan Distances between all tiles and their correct positions ");
 					System.out.println("g = path-cost");
-					printSolution( AStar2( new Node(puzzle,null,null,0,0, manhattanDistances(puzzle)) ), "f(n) = " );
+					sa = new AStar2();
+					printSolution( sa.search( new Node(puzzle,null,null,0,0, manhattanDistances(puzzle)) ), "f(n) = " );
 					break;
 				case "0":
 					System.out.println("Good-bye.");
@@ -851,9 +406,6 @@ class EightPuzzle{
 			
 			
 		} //first while
-		
-		//Stack uses push and pop when using linkedlist		
-		//Queue uses add and pop
-		
+				
 	}//end of main
 }//end of class
